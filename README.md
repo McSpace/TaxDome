@@ -308,6 +308,11 @@ database replaces its body. The API has no test switches or routes.
 
 ## How I worked: AI tools and history
 
+- **ChatGPT (GPT-6.1)** was my starting point. I analyzed the challenge requirements and
+  made the main architectural decisions there. I refreshed my understanding of PostgreSQL
+  row-level locking, then designed how the service would use those locks to keep concurrent
+  payments safe and avoid deadlocks. I also designed the architecture module by module.
+  From that work, I prepared the PRD and handed it over to Claude Code for implementation.
 - **Claude Code** (Anthropic CLI agent, model Claude Opus 5.5) with the *superpowers* skills
   plugin. It created this repository, installed Docker, wrote the implementation plan
   ([`docs/superpowers/plans/`](docs/superpowers/plans/2026-10-29-bulk-firm-payments.md)) from the
