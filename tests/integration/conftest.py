@@ -1,9 +1,10 @@
 import os
 
+import httpx
 import psycopg
 import pytest
 
-from tests.integration.support import BASE_FIXTURE, admin_connect, clear_hooks, reset_db
+from tests.integration.support import BASE_FIXTURE, BASE_URL, admin_connect, clear_hooks, reset_db
 
 EXPECTED_MODE = os.environ.get("EXPECTED_IDEMPOTENCY_MODE", "on")
 
@@ -32,3 +33,10 @@ def _case_properties(request, record_property, mode):
     if ids:
         record_property("case_ids", ",".join(ids))
     record_property("idempotency_mode", mode)
+
+
+@pytest.fixture(scope="session")
+def http():
+    """Client for the public entry point (Nginx in the full stack)."""
+    with httpx.Client(base_url=BASE_URL, timeout=30) as client:
+        yield client

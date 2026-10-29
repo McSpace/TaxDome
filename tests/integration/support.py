@@ -168,3 +168,36 @@ def wait_until(predicate: Callable[[], bool], timeout: float = 5.0, interval: fl
         if time.monotonic() > deadline:
             raise AssertionError(f"condition not met within {timeout}s")
         time.sleep(interval)
+
+
+BASE_URL = os.environ.get("PUBLIC_BASE_URL", "http://nginx:8080")
+BATCH_PATH = "/payments/batch"
+JSON_HEADERS = {"Content-Type": "application/json"}
+
+
+def _uuid(firm: "Firm | str") -> str:
+    return firm.uuid if isinstance(firm, Firm) else firm
+
+
+def batch_body(payer: "Firm | str", entries: Iterable[tuple["Firm | str", str, str]]) -> dict:
+    return {
+        "payer_firm_uuid": _uuid(payer),
+        "payments": [
+            {"amount": amount, "payee_firm_uuid": _uuid(payee), "description": description}
+            for payee, amount, description in entries
+        ],
+    }
+
+
+def post_batch(client, payer, entries):
+    """POST a batch built from (payee, amount string, description) tuples."""
+    return client.post(BATCH_PATH, json=batch_body(payer, entries))
+
+
+def post_raw(client, content: bytes, content_type: str | None = "application/json"):
+    headers = {"Content-Type": content_type} if content_type is not None else {}
+    return client.post(BATCH_PATH, content=content, headers=headers)
+
+
+def error_code(response) -> str:
+    return response.json()["error"]["code"]

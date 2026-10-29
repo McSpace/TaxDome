@@ -69,7 +69,7 @@ Description = Annotated[
 ]
 
 
-class PaymentModel(BaseModel):
+class PaymentRequestEntry(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
 
     # The validator converts the string to integer cents; the wire type stays a string.
@@ -87,7 +87,7 @@ class BatchRequestModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
 
     payer_firm_uuid: FirmUuid = Field(description="Public UUID of the paying firm.")
-    payments: list[PaymentModel] = Field(min_length=1, max_length=MAX_BATCH_SIZE)
+    payments: list[PaymentRequestEntry] = Field(min_length=1, max_length=MAX_BATCH_SIZE)
 
 
 def parse_amount(text: str) -> int:

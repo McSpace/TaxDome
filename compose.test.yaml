@@ -12,9 +12,12 @@ services:
       API_DATABASE_URL: postgresql://payments_api:${API_DB_PASSWORD:-api-dev-password}@postgres:5432/taxdome
       API_DB_PASSWORD: ${API_DB_PASSWORD:-api-dev-password}
       EXPECTED_IDEMPOTENCY_MODE: ${EXPECTED_IDEMPOTENCY_MODE:-on}
+      PUBLIC_BASE_URL: http://api-1:8000
       HOME: /tmp
     volumes:
       - ./evidence/test-results:/srv/results
     depends_on:
       db-init:
         condition: service_completed_successfully
+      api-1:
+        condition: service_healthy
