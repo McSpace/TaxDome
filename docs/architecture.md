@@ -1,6 +1,6 @@
 # TaxDome payment service architecture
 
-This is the agreed design for the challenge submission, not an implemented service. See [the editable component diagram](architecture.excalidraw). The five-page **TA Firm Payments.pdf**, the architecture discussion, and the PostgreSQL locking discussion were reviewed. Conditional idempotency and self-payment semantics below are explicit project assumptions beyond the challenge's basic contract.
+This is the agreed design for the challenge submission; it is implemented in this repository (see the [README](../README.md)). See [the editable component diagram](architecture.excalidraw). The five-page **TA Firm Payments.pdf**, the architecture discussion, and the PostgreSQL locking discussion were reviewed. Conditional idempotency and self-payment semantics below are explicit project assumptions beyond the challenge's basic contract.
 
 ## Docker Compose stack
 

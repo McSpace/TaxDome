@@ -1,6 +1,6 @@
 # TaxDome specification package
 
-Start with **[PRD.md](PRD.md)**. It is the final English implementation contract for a coding agent. This folder contains specifications and source material; it does not yet contain an implemented service.
+Start with **[PRD.md](PRD.md)**. It is the final English implementation contract for a coding agent. This folder contains the specifications and source material the service was built from; the implementation, run instructions and results are described in the [repository README](../README.md). The implementation plan is in [superpowers/plans](superpowers/plans/2026-10-29-bulk-firm-payments.md).
 
 ## Active implementation documents
 
@@ -36,4 +36,4 @@ Some assistant answers in the locking and architecture histories are available o
 
 The JSON files are unmodified tool-returned history snapshots, not certified complete exports. They do not satisfy the challenge's requirement for complete unedited AI conversation logs by themselves. Preserve genuine exports when available before final submission. Do not fill unavailable source content with invented quotations.
 
-Precedence: explicit current user scope decisions and PRD, then architecture/algorithm notes, then active test catalogue as scenario inputs. The challenge remains the baseline; additional PRD choices are labeled. Original discussions and archived scenarios provide provenance only. No implementation or publication has been performed by creating this package.
+Precedence: explicit current user scope decisions and PRD, then architecture/algorithm notes, then active test catalogue as scenario inputs. The challenge remains the baseline; additional PRD choices are labeled. Original discussions and archived scenarios provide provenance only. This package itself was written before implementation; see the repository README for what was built.
