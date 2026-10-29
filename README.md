@@ -32,7 +32,7 @@ three identical FastAPI instances behind Nginx, and PostgreSQL is the single sou
 ## Solution overview
 
 ```
-client ──► nginx :8080 (round-robin, no POST replay)
+client ──► nginx :8080 (round-robin, failover only before a request is sent)
               ├─► api-1 ┐
               ├─► api-2 ├─► PostgreSQL 18: app.firms, app.payments,
               └─► api-3 ┘    app.process_payment_batch(text, jsonb)  ◄── db-init (one-shot)
@@ -177,8 +177,10 @@ Errors use one envelope: `{"error": {"code": "...", "message": "...", "details":
 
 Checks run in this order: bytes/media/JSON → all field validation → firm existence → ON-mode
 conflicts → funds → balance range → writes → commit. Nginx itself may return 502/504 if no API
-answers. It never retries a request on another instance (`proxy_next_upstream off`), so a POST
-is never sent twice.
+answers. If an instance cannot be reached, Nginx tries the next one
+(`proxy_next_upstream error timeout`). It never sends a POST to a second instance once any part
+of it reached the first (no `non_idempotent`), so a payment is never submitted twice by the
+proxy.
 
 Diagnostics: `GET /health/live` (no DB access), `GET /health/ready` and `GET /diagnostics` (200
 with `instance_id` and `idempotency_mode`, or 503). Each request writes one JSON log line with
@@ -242,8 +244,8 @@ the first insert, and before commit. Each failure must leave rows and balances u
 
 | Mode | Result |
 | --- | --- |
-| ON (default) | 479 passed (181 unit + 298 integration) |
-| OFF | 479 passed |
+| ON (default) | 481 passed (183 unit + 298 integration) |
+| OFF | 481 passed |
 | Mode-mismatch runner | aborted with exit 3 in both modes, as required |
 | Restart check | balances, payments and mode preserved |
 
@@ -323,7 +325,7 @@ Assumptions from the challenge's open points, settled in [`docs/PRD.md`](docs/PR
 ```
 app/            FastAPI app, strict request parsing, DB access, initializer (migrate.py)
 db/             schema, stored function, privileges, seed (applied by db-init)
-nginx/          nginx.conf (round-robin, 1 MiB limit, no POST replay)
+nginx/          nginx.conf (round-robin, 1 MiB limit, failover without POST replay)
 tests/unit/     parsing, error mapping, settings, catalogue traceability (no Docker)
 tests/integration/  runs inside the test-runner container
 scripts/        up, down, sample, db-state, test, verify-restart, reset-test

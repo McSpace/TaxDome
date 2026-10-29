@@ -88,7 +88,7 @@ def test_intro_example(admin, http):
 
 def test_nginx_does_not_replay_post():
     conf = NGINX_CONF.read_text()
-    assert "proxy_next_upstream off;" in conf
+    assert "proxy_next_upstream error timeout;" in conf
     assert "non_idempotent" not in conf
 
 

@@ -23,7 +23,8 @@ RUN uv sync --frozen --no-install-project
 COPY app ./app
 COPY db ./db
 COPY tests ./tests
-COPY docs/Firm_Payments_Test_Scenarios.md ./docs/Firm_Payments_Test_Scenarios.md
+RUN mkdir -p docs
+COPY --chmod=644 docs/Firm_Payments_Test_Scenarios.md ./docs/Firm_Payments_Test_Scenarios.md
 RUN useradd --system --uid 10001 runner && mkdir -p /srv/results && chown runner /srv/results
 USER runner
 CMD ["pytest", "tests", "-p", "no:cacheprovider"]
