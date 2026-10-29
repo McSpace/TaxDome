@@ -226,6 +226,8 @@ again, and the next one fails with `insufficient_funds`.
 
 ## Verification and test results
 
+An independent verification against the original challenge PDF, including local startup, transaction checks and both test modes, is available in [the verification report](docs/verification-report.ru.md).
+
 `scripts/test.sh all` does the following:
 
 1. For each mode, starts a **separate disposable Compose project** (`taxdome-test-on`, then
@@ -340,5 +342,5 @@ uvicorn 0.54.0, pytest 9.2.0, HTTPX 0.28.1 (lock file: `uv.lock`).
 
 ## Two quick questions
 
-- **How much time did you spend on this task?** _Pending: to be answered by the author._
-- **How proud are you of your work?** _Pending: to be answered by the author._
+- **How much time did you spend on this task?** 3h to 6h
+- **How proud are you of your work?** Fairly proud
