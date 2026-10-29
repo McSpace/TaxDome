@@ -115,6 +115,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         body = await read_limited_body(request)
         batch = parse_batch_request(body, request.headers.get("content-type"))
         result = await database.execute_batch(batch)
+        result = {field: result[field] for field in BatchResult.model_fields}
         request.state.log.update(
             code="created",
             mode=result["idempotency_mode"],

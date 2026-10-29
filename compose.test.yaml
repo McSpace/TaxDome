@@ -1,5 +1,18 @@
 # Overrides for disposable test projects (scripts/test.sh). Never used for the normal stack.
 services:
+  # Short resource waits so timeout cases finish quickly; the normal stack keeps PRD defaults.
+  api-1: &test-api
+    environment:
+      DB_POOL_TIMEOUT_SECONDS: "2"
+      DB_LOCK_TIMEOUT_MS: "2000"
+      DB_STATEMENT_TIMEOUT_MS: "4000"
+  api-2: *test-api
+  api-3: *test-api
+
+  # Test stacks publish no host ports, so they never collide with the normal stack.
+  nginx:
+    ports: !reset []
+
   test-runner:
     profiles: ["test"]
     build:
@@ -12,12 +25,20 @@ services:
       API_DATABASE_URL: postgresql://payments_api:${API_DB_PASSWORD:-api-dev-password}@postgres:5432/taxdome
       API_DB_PASSWORD: ${API_DB_PASSWORD:-api-dev-password}
       EXPECTED_IDEMPOTENCY_MODE: ${EXPECTED_IDEMPOTENCY_MODE:-on}
-      PUBLIC_BASE_URL: http://api-1:8000
+      PUBLIC_BASE_URL: http://nginx:8080
       HOME: /tmp
     volumes:
       - ./evidence/test-results:/srv/results
+      - ./examples:/srv/examples:ro
+      - ./nginx:/srv/nginx:ro
     depends_on:
       db-init:
         condition: service_completed_successfully
       api-1:
+        condition: service_healthy
+      api-2:
+        condition: service_healthy
+      api-3:
+        condition: service_healthy
+      nginx:
         condition: service_healthy

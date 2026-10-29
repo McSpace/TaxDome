@@ -17,6 +17,7 @@ from tests.integration.support import (
     API_DB_URL,
     SAMPLE_FIXTURE,
     call_function_as_api,
+    installed_mode,
     reset_db,
     snapshot,
     with_balances,
@@ -211,16 +212,6 @@ def scratch_url(admin):
     admin.execute(f'CREATE DATABASE "{name}"')
     yield psycopg.conninfo.make_conninfo(ADMIN_URL, dbname=name)
     admin.execute(f'DROP DATABASE "{name}" WITH (FORCE)')
-
-
-def installed_mode(url: str) -> str | None:
-    with psycopg.connect(url) as conn:
-        row = conn.execute(
-            "SELECT cfg FROM pg_catalog.pg_proc p, unnest(p.proconfig) cfg"
-            " WHERE p.oid = to_regprocedure('app.process_payment_batch(text,jsonb)')"
-            " AND cfg LIKE 'app.payment_idempotency=%'"
-        ).fetchone()
-    return row[0].split("=", 1)[1] if row else None
 
 
 API_PASSWORD = os.environ.get("API_DB_PASSWORD", "")

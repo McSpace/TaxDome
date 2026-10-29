@@ -4,7 +4,15 @@ import httpx
 import psycopg
 import pytest
 
-from tests.integration.support import BASE_FIXTURE, BASE_URL, admin_connect, clear_hooks, reset_db
+from tests.integration.support import (
+    API_URLS,
+    BASE_FIXTURE,
+    BASE_URL,
+    admin_connect,
+    clear_hooks,
+    preflight,
+    reset_db,
+)
 
 EXPECTED_MODE = os.environ.get("EXPECTED_IDEMPOTENCY_MODE", "on")
 
@@ -12,6 +20,14 @@ EXPECTED_MODE = os.environ.get("EXPECTED_IDEMPOTENCY_MODE", "on")
 @pytest.fixture(scope="session")
 def mode() -> str:
     return EXPECTED_MODE
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _verify_deployment_mode():
+    """Abort before any payment test unless every component reports the expected mode."""
+    problems = preflight(EXPECTED_MODE)
+    if problems:
+        pytest.exit("Deployment preflight failed:\n  " + "\n  ".join(problems), returncode=3)
 
 
 @pytest.fixture
@@ -40,3 +56,12 @@ def http():
     """Client for the public entry point (Nginx in the full stack)."""
     with httpx.Client(base_url=BASE_URL, timeout=30) as client:
         yield client
+
+
+@pytest.fixture(scope="session")
+def apis():
+    """Direct clients for each API instance, keyed by instance id."""
+    clients = {name: httpx.Client(base_url=url, timeout=30) for name, url in API_URLS.items()}
+    yield clients
+    for client in clients.values():
+        client.close()

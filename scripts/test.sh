@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run the integration suite in disposable Compose projects: one per idempotency mode.
 # Usage: scripts/test.sh [on|off|all] [extra pytest args...]
+# "all" also runs scripts/verify-restart.sh. JUnit reports go to evidence/test-results/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -35,6 +36,18 @@ run_mode() {
     pytest tests -p no:cacheprovider -o junit_suite_name="taxdome-${mode}" \
     --junitxml="/srv/results/junit-${mode}.xml" "$@" || status=$?
 
+  if [[ "$status" == 0 ]]; then
+    local opposite=on; [[ "$mode" == on ]] && opposite=off
+    echo "=== [$mode] runner expecting '$opposite' must abort before payment tests (exit 3)"
+    local mismatch=0
+    EXPECTED_IDEMPOTENCY_MODE="$opposite" "${compose[@]}" run --rm test-runner \
+      pytest tests/integration -q -p no:cacheprovider >/dev/null 2>&1 || mismatch=$?
+    if [[ "$mismatch" != 3 ]]; then
+      echo "=== [$mode] mismatch check FAILED: runner exited $mismatch" >&2
+      status=1
+    fi
+  fi
+
   echo "=== [$mode] removing $project"
   "${compose[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
   return "$status"
@@ -47,4 +60,7 @@ for mode in "${modes[@]}"; do
     overall=1
   fi
 done
+if [[ "$target" == all ]] && ! scripts/verify-restart.sh; then
+  overall=1
+fi
 exit "$overall"

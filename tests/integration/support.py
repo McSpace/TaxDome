@@ -201,3 +201,49 @@ def post_raw(client, content: bytes, content_type: str | None = "application/jso
 
 def error_code(response) -> str:
     return response.json()["error"]["code"]
+
+
+API_URLS = {
+    "api-1": "http://api-1:8000",
+    "api-2": "http://api-2:8000",
+    "api-3": "http://api-3:8000",
+}
+
+
+def installed_mode(url: str = ADMIN_URL) -> str | None:
+    """Mode from the exact function signature's configuration, read as the fixture superuser."""
+    with psycopg.connect(url) as conn:
+        row = conn.execute(
+            "SELECT cfg FROM pg_catalog.pg_proc p, unnest(p.proconfig) cfg"
+            " WHERE p.oid = to_regprocedure('app.process_payment_batch(text,jsonb)')"
+            " AND cfg LIKE 'app.payment_idempotency=%'"
+        ).fetchone()
+    return row[0].split("=", 1)[1] if row else None
+
+
+def preflight(expected_mode: str) -> list[str]:
+    """Compare the expected mode with the database, every API instance directly, and Nginx."""
+    import httpx
+
+    problems = []
+    db_mode = installed_mode()
+    if db_mode != expected_mode:
+        problems.append(f"database function mode is {db_mode!r}, expected {expected_mode!r}")
+    targets = [(name, url) for name, url in API_URLS.items()] + [("nginx", BASE_URL)]
+    for name, url in targets:
+        try:
+            ready = httpx.get(f"{url}/health/ready", timeout=5)
+            diag = httpx.get(f"{url}/diagnostics", timeout=5)
+        except httpx.HTTPError as exc:
+            problems.append(f"{name}: unreachable ({exc.__class__.__name__})")
+            continue
+        if ready.status_code != 200 or diag.status_code != 200:
+            problems.append(f"{name}: not ready (ready={ready.status_code}, diagnostics={diag.status_code})")
+            continue
+        info = diag.json()
+        if info.get("idempotency_mode") != expected_mode:
+            problems.append(f"{name}: reports mode {info.get('idempotency_mode')!r}, expected {expected_mode!r}")
+        expected_ids = set(API_URLS) if name == "nginx" else {name}
+        if info.get("instance_id") not in expected_ids:
+            problems.append(f"{name}: reports instance {info.get('instance_id')!r}")
+    return problems
