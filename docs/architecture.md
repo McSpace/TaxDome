@@ -6,7 +6,7 @@ This is the agreed design for the challenge submission; it is implemented in thi
 
 | Service | Responsibility |
 | --- | --- |
-| `nginx` | Public HTTP entry point; round-robin routing to `api-1`, `api-2`, and `api-3`. Disable automatic retries of payment POST requests, especially in OFF mode. |
+| `nginx` | Public HTTP entry point; round-robin routing to `api-1`, `api-2`, and `api-3`. Fail over to another instance only when one cannot be reached; never resend a payment POST that any instance received, especially in OFF mode. |
 | `api-1..3` | Three identical, stateless Python/FastAPI instances. Validate JSON, convert decimal USD strings exactly to integer cents, call the stored function through an asynchronous PostgreSQL connection pool (for example, psycopg), and map results to HTTP. No ORM or process-local correctness locks. |
 | `postgres` | Shared source of truth: existing `firms` and `payments` tables, balances, payment history, and the payment stored function. Keep the supplied columns/types; add no application tables. |
 | `test-runner` | Independent, one-shot Pytest service, enabled through a Compose test profile. Sends HTTP traffic through Nginx, verifies each API instance directly on the private network, and uses a separate database connection for fixtures and assertions. Exits nonzero on failure. |

@@ -14,15 +14,19 @@ three identical FastAPI instances behind Nginx, and PostgreSQL is the single sou
 > ```
 > Prerequisites: Docker Engine with the Compose v2 plugin. Python and PostgreSQL are not needed on the host.
 
+[![Architecture: test runner and clients reach Nginx, which round-robins to three FastAPI instances that call one stored function in PostgreSQL; db-init prepares the database first](docs/architecture.png)](docs/architecture.png)
+
+*Architecture diagram ([PNG](docs/architecture.png), editable [Excalidraw source](docs/architecture.excalidraw), notes in [docs/architecture.md](docs/architecture.md)).*
+
 ## Contents
 
 - [Solution overview](#solution-overview)
+- [Assumptions](#assumptions)
 - [Why it is safe under concurrency](#why-it-is-safe-under-concurrency)
 - [Conditional idempotency (ON/OFF) and its limitation](#conditional-idempotency-onoff-and-its-limitation)
 - [HTTP API](#http-api)
 - [Running it](#running-it)
 - [Verification and test results](#verification-and-test-results)
-- [Assumptions](#assumptions)
 - [Problems encountered](#problems-encountered)
 - [Possible improvements](#possible-improvements)
 - [How I worked: AI tools and history](#how-i-worked-ai-tools-and-history)
@@ -31,12 +35,7 @@ three identical FastAPI instances behind Nginx, and PostgreSQL is the single sou
 
 ## Solution overview
 
-```
-client ──► nginx :8080 (round-robin, failover only before a request is sent)
-              ├─► api-1 ┐
-              ├─► api-2 ├─► PostgreSQL 18: app.firms, app.payments,
-              └─► api-3 ┘    app.process_payment_batch(text, jsonb)  ◄── db-init (one-shot)
-```
+The request path is shown in the [architecture diagram](#taxdome-firm-payments--bulk-payment-service) above.
 
 1. **API (FastAPI, `app/`)** reads the raw body (capped at 1 MiB while streaming) and checks
    the media type. It decodes strict UTF-8 JSON and rejects a BOM, duplicate member names and
@@ -60,6 +59,23 @@ The supplied tables are unchanged (`firms`, `payments` with exactly the given co
 `INTEGER` types), in schema `app`. I added only integrity constraints (primary keys, foreign
 keys, a unique firm UUID, positive amounts, non-negative balances) and a **non-unique** lookup
 index on `(payer_firm_id, payee_firm_id, description COLLATE "C")`.
+
+## Assumptions
+
+Assumptions from the challenge's open points, settled in [`docs/PRD.md`](docs/PRD.md) §15:
+
+- One payer per batch. A firm may pay itself: a row is recorded with zero net balance change,
+  but the gross amount still has to be covered. Credits arriving in the same batch cannot fund
+  it. Credits committed by other transactions before our locks are granted can.
+- Empty and whitespace-only descriptions are allowed and kept exactly. Firm UUIDs are matched
+  case-insensitively.
+- Amounts are limited to the supplied `INTEGER` column (≤ $21,474,836.47 per payment and per
+  balance). Sums use `bigint`.
+- Firms are seeded; there is no firm management API and no other writer during traffic.
+- The idempotency mode is fixed per deployment (see
+  [Conditional idempotency](#conditional-idempotency-onoff-and-its-limitation)). There is no authentication, by scope decision:
+  any caller can spend any firm's balance. A real deployment must authenticate the payer.
+- The official seed is loaded only into an empty `firms` table.
 
 ## Why it is safe under concurrency
 
@@ -244,8 +260,8 @@ the first insert, and before commit. Each failure must leave rows and balances u
 
 | Mode | Result |
 | --- | --- |
-| ON (default) | 481 passed (183 unit + 298 integration) |
-| OFF | 481 passed |
+| ON (default) | 499 passed (192 unit + 307 integration) |
+| OFF | 499 passed |
 | Mode-mismatch runner | aborted with exit 3 in both modes, as required |
 | Restart check | balances, payments and mode preserved |
 
@@ -254,22 +270,6 @@ The full suite takes about 70 s per mode. JUnit files are committed in `evidence
 About the test-only hook: production installs `app.test_hook(stage, payer_id)` as an empty
 function owned by `payments_owner`, with no `EXECUTE` for anyone else. Only the disposable test
 database replaces its body. The API has no test switches or routes.
-
-## Assumptions
-
-Assumptions from the challenge's open points, settled in [`docs/PRD.md`](docs/PRD.md) §15:
-
-- One payer per batch. A firm may pay itself: a row is recorded with zero net balance change,
-  but the gross amount still has to be covered. Credits arriving in the same batch cannot fund
-  it. Credits committed by other transactions before our locks are granted can.
-- Empty and whitespace-only descriptions are allowed and kept exactly. Firm UUIDs are matched
-  case-insensitively.
-- Amounts are limited to the supplied `INTEGER` column (≤ $21,474,836.47 per payment and per
-  balance). Sums use `bigint`.
-- Firms are seeded; there is no firm management API and no other writer during traffic.
-- The mode is fixed per deployment (see above). There is no authentication, by scope decision:
-  any caller can spend any firm's balance. A real deployment must authenticate the payer.
-- The official seed is loaded only into an empty `firms` table.
 
 ## Problems encountered
 
