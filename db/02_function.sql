@@ -205,6 +205,7 @@ BEGIN
             UPDATE app.firms SET balance_cents = balance_cents + delta WHERE id = firm_id;
             PERFORM app.test_hook('after_payee_balance', payer_id);
         END LOOP;
+        PERFORM app.test_hook('after_balances', payer_id);
 
         FOR idx IN 1 .. entry_count LOOP
             CONTINUE WHEN NOT keep[idx];

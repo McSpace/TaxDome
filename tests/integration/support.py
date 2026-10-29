@@ -4,10 +4,12 @@ Everything here runs in the test-runner container against the disposable test
 database, using superuser credentials that the API instances never receive.
 """
 
+import itertools
 import json
 import os
 import time
 from collections.abc import Callable, Iterable
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, replace
 
 import psycopg
@@ -108,6 +110,7 @@ def call_function_as_api(
 HOOK_SETUP = """
 CREATE SCHEMA IF NOT EXISTS test_support;
 CREATE TABLE IF NOT EXISTS test_support.hook_rules (
+    id bigserial PRIMARY KEY,
     stage text NOT NULL,
     payer_id integer,
     action text NOT NULL CHECK (action IN ('raise', 'block', 'sleep')),
@@ -128,11 +131,13 @@ BEGIN
         SELECT h.action, h.arg FROM test_support.hook_rules h
         WHERE h.stage = test_hook.stage
           AND (h.payer_id IS NULL OR h.payer_id = test_hook.payer_id)
+        ORDER BY h.id
     LOOP
         IF rule.action = 'raise' THEN
             RAISE EXCEPTION 'injected test fault at %', stage;
         ELSIF rule.action = 'block' THEN
-            PERFORM pg_advisory_xact_lock(rule.arg);
+            -- Shared, so every blocked request proceeds together once the gate opens.
+            PERFORM pg_advisory_xact_lock_shared(rule.arg);
         ELSIF rule.action = 'sleep' THEN
             PERFORM pg_sleep(rule.arg);
         END IF;
@@ -271,3 +276,64 @@ def assert_committed(before: Snapshot, after: Snapshot, rows: list[tuple[int, in
 
 def assert_unchanged(before: Snapshot, after: Snapshot) -> None:
     assert after == before
+
+
+def assert_ledger(opening: Iterable[Firm], after: Snapshot) -> None:
+    """Every balance equals its opening balance plus committed incoming minus outgoing."""
+    expected = {f.id: f.cents for f in opening}
+    for _, payer_id, payee_id, cents, _ in after.payments:
+        expected[payer_id] -= cents
+        expected[payee_id] += cents
+    assert after.balances == expected
+    assert all(cents >= 0 for cents in after.balances.values())
+
+
+def waiting_sessions(event: str) -> int:
+    """API-role sessions blocked on a lock: 'advisory' (test gate) or 'row' (firm row lock)."""
+    events = ("transactionid", "tuple") if event == "row" else (event,)
+    with psycopg.connect(ADMIN_URL, autocommit=True) as conn:
+        (count,) = conn.execute(
+            "SELECT count(*) FROM pg_stat_activity WHERE usename = 'payments_api'"
+            " AND wait_event_type = 'Lock' AND wait_event = ANY(%s)",
+            (list(events),),
+        ).fetchone()
+    return count
+
+
+_gate_keys = itertools.count(9_000_001)
+
+
+class Gate:
+    """Pause requests at a function stage until released (exclusive advisory lock held here)."""
+
+    def __init__(self, admin: psycopg.Connection, stage: str, payer_id: int | None = None) -> None:
+        self.key = next(_gate_keys)
+        self.holder = psycopg.connect(ADMIN_URL, autocommit=True)
+        self.holder.execute("SELECT pg_advisory_lock(%s)", (self.key,))
+        install_hook(admin, stage, "block", payer_id, self.key)
+
+    def wait_for(self, count: int, timeout: float = 10.0) -> None:
+        wait_until(lambda: waiting_sessions("advisory") >= count, timeout)
+
+    def release(self) -> None:
+        if not self.holder.closed:
+            self.holder.execute("SELECT pg_advisory_unlock(%s)", (self.key,))
+            self.holder.close()
+
+    def __enter__(self) -> "Gate":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.release()
+
+
+_executor = ThreadPoolExecutor(max_workers=64)
+
+
+def background(fn: Callable, *args) -> Future:
+    return _executor.submit(fn, *args)
+
+
+def run_parallel(calls: list[Callable]) -> list:
+    futures = [_executor.submit(call) for call in calls]
+    return [f.result(timeout=60) for f in futures]
