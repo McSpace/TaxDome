@@ -247,3 +247,27 @@ def preflight(expected_mode: str) -> list[str]:
         if info.get("instance_id") not in expected_ids:
             problems.append(f"{name}: reports instance {info.get('instance_id')!r}")
     return problems
+
+
+def expected_rows(payer: Firm, entries) -> list[tuple[int, int, int, str]]:
+    """Rows that a fully accepted batch of (payee Firm, amount string, description) inserts."""
+    from app.request_parsing import parse_amount
+
+    return [(payer.id, payee.id, parse_amount(amount), desc) for payee, amount, desc in entries]
+
+
+def assert_committed(before: Snapshot, after: Snapshot, rows: list[tuple[int, int, int, str]]) -> None:
+    """Exactly `rows` were appended and balances moved by exactly their amounts."""
+    assert after.rows_without_ids()[len(before.payments):] == rows
+    assert after.payments[: len(before.payments)] == before.payments
+    expected = dict(before.balances)
+    for payer_id, payee_id, cents, _ in rows:
+        expected[payer_id] -= cents
+        expected[payee_id] += cents
+    assert after.balances == expected
+    assert all(cents >= 0 for cents in after.balances.values())
+    assert after.total == before.total
+
+
+def assert_unchanged(before: Snapshot, after: Snapshot) -> None:
+    assert after == before
