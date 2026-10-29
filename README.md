@@ -316,8 +316,9 @@ database replaces its body. The API has no test switches or routes.
   architecture discussion. Their available history snapshots are in `docs/sources/conversations/`.
   As `docs/README.md` explains, these are tool-returned snapshots, not certified complete
   exports.
-- The unedited Claude Code session transcript is to be exported by the repository owner into
-  [`evidence/ai-logs/`](evidence/README.md). See that file for status.
+- The Claude Code implementation session transcript is in
+  [`docs/sources/conversations/developing-claudecode-session.md`](docs/sources/conversations/developing-claudecode-session.md),
+  exported with Claude Code's `/export` command.
 - Commit history: one commit per plan task on branch `feat/bulk-payments` (`git log --oneline`).
 
 ## Repository layout

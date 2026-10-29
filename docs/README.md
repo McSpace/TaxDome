@@ -27,6 +27,7 @@ The active test catalogue excludes authorization, signatures, tenancy, live mode
 | [Challenge discussion snapshot](sources/conversations/challenge-review.json) | Available history returned for “Разбор задания и перевод”. |
 | [PostgreSQL discussion snapshot](sources/conversations/postgres-locking.json) | Available history returned for “Блокировки балансов Postgres”. |
 | [Architecture discussion snapshot](sources/conversations/architecture-discussion.json) | Available history returned for “Проектирование архитектуры системы”. |
+| [Claude Code development session](sources/conversations/developing-claudecode-session.md) | Implementation session (repository setup, plan, code, tests, review), exported with Claude Code's `/export` command. |
 
 ## Source limitations and precedence
 
