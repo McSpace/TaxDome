@@ -242,8 +242,8 @@ the first insert, and before commit. Each failure must leave rows and balances u
 
 | Mode | Result |
 | --- | --- |
-| ON (default) | 476 passed (181 unit + 295 integration) |
-| OFF | 476 passed |
+| ON (default) | 479 passed (181 unit + 298 integration) |
+| OFF | 479 passed |
 | Mode-mismatch runner | aborted with exit 3 in both modes, as required |
 | Restart check | balances, payments and mode preserved |
 
