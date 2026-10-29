@@ -46,6 +46,8 @@ DECLARE
     gross       bigint := 0;
     inserted    integer := 0;
     delta       bigint;
+    valid       boolean;
+    amount      numeric;
 BEGIN
     -- 1. Mode and complete input validation; no locks or writes yet.
     IF mode IS NULL OR mode NOT IN ('on', 'off') THEN
@@ -69,16 +71,23 @@ BEGIN
     FOR entry, idx IN
         SELECT e.value, e.ordinality - 1 FROM jsonb_array_elements(entries) WITH ORDINALITY e
     LOOP
-        IF jsonb_typeof(entry) <> 'object'
-            OR ARRAY(SELECT k FROM jsonb_object_keys(entry) k ORDER BY k) <> entry_keys
-            OR jsonb_typeof(entry -> 'amount_cents') <> 'number'
-            OR (entry ->> 'amount_cents')::numeric <> trunc((entry ->> 'amount_cents')::numeric)
-            OR (entry ->> 'amount_cents')::numeric NOT BETWEEN 1 AND max_cents
-            OR jsonb_typeof(entry -> 'description') <> 'string'
-            OR char_length(entry ->> 'description') > 1024
-            OR jsonb_typeof(entry -> 'payee_firm_uuid') <> 'string'
-            OR (entry ->> 'payee_firm_uuid') !~ uuid_re
-        THEN
+        -- Staged checks: SQL does not guarantee left-to-right evaluation of OR/AND, so each
+        -- stage only runs once the previous one proved its inputs have the right JSON type.
+        valid := jsonb_typeof(entry) = 'object';
+        IF valid THEN
+            valid := ARRAY(SELECT k FROM jsonb_object_keys(entry) k ORDER BY k) = entry_keys
+                AND jsonb_typeof(entry -> 'amount_cents') = 'number'
+                AND jsonb_typeof(entry -> 'description') = 'string'
+                AND jsonb_typeof(entry -> 'payee_firm_uuid') = 'string';
+        END IF;
+        IF valid THEN
+            amount := (entry ->> 'amount_cents')::numeric;
+            valid := amount = trunc(amount)
+                AND amount BETWEEN 1 AND max_cents
+                AND char_length(entry ->> 'description') <= 1024
+                AND (entry ->> 'payee_firm_uuid') ~ uuid_re;
+        END IF;
+        IF NOT valid THEN
             problems := problems || jsonb_build_object('index', idx, 'path', format('payments[%s]', idx));
         END IF;
     END LOOP;

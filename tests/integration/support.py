@@ -332,8 +332,3 @@ _executor = ThreadPoolExecutor(max_workers=64)
 
 def background(fn: Callable, *args) -> Future:
     return _executor.submit(fn, *args)
-
-
-def run_parallel(calls: list[Callable]) -> list:
-    futures = [_executor.submit(call) for call in calls]
-    return [f.result(timeout=60) for f in futures]

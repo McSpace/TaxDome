@@ -1,6 +1,5 @@
 """FastAPI application: payment batch endpoint, health checks and diagnostics."""
 
-import logging
 import os
 from contextlib import asynccontextmanager
 from typing import Any, Literal
@@ -17,7 +16,6 @@ from app.errors import ApiError
 from app.observability import RequestLogMiddleware, configure_logging
 from app.request_parsing import MAX_BODY_BYTES, BatchRequestModel, parse_batch_request
 
-log = logging.getLogger("taxdome.app")
 
 
 class BatchResult(BaseModel):
@@ -91,12 +89,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         code = STATUS_CODES.get(exc.status_code, "http_error")
         error = ApiError(exc.status_code, code, str(exc.detail))
         return JSONResponse(error.envelope(), status_code=exc.status_code, headers=exc.headers)
-
-    @app.exception_handler(Exception)
-    async def unexpected_error_handler(request: Request, exc: Exception) -> JSONResponse:
-        log.exception("unhandled error", extra={"fields": {"request_id": request.state.request_id}})
-        error = ApiError(500, "internal_error", "Unexpected internal error.")
-        return JSONResponse(error.envelope(), status_code=500)
 
     @app.post(
         "/payments/batch",

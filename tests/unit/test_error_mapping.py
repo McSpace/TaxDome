@@ -52,3 +52,20 @@ def test_details_come_from_detail_json():
 
 def test_non_json_detail_is_ignored():
     assert map_db_error(db_error("TD002", detail="not json"), False).details is None
+
+
+@pytest.mark.parametrize(
+    "exc, during_commit, status, code",
+    [
+        # Client-side "connection is closed" before COMMIT: nothing can have been applied.
+        (db_error(None, psycopg.InterfaceError), False, 503, "temporarily_unavailable"),
+        (db_error(None, psycopg.InterfaceError), True, 503, "commit_outcome_unknown"),
+        # COMMIT answered by the server with an error: the server reported a rollback.
+        (db_error("57014", psycopg.errors.OperationalError), True, 503, "temporarily_unavailable"),
+        (db_error("40001", psycopg.errors.TransactionRollback), True, 503, "temporarily_unavailable"),
+        (db_error("23514", psycopg.errors.IntegrityError), True, 500, "internal_error"),
+    ],
+)
+def test_commit_and_connection_edge_cases(exc, during_commit, status, code):
+    error = map_db_error(exc, during_commit)
+    assert (error.status, error.code) == (status, code)

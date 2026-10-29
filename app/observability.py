@@ -15,6 +15,10 @@ _SAFE_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,128}")
 
 logger = logging.getLogger("taxdome.requests")
 
+INTERNAL_ERROR_BODY = json.dumps(
+    {"error": {"code": "internal_error", "message": "Unexpected internal error."}}
+).encode()
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -72,8 +76,29 @@ class RequestLogMiddleware:
                 ]
             await send(message)
 
+        response_started = False
+
+        async def send_tracking(message: Message) -> None:
+            nonlocal response_started
+            response_started = response_started or message["type"] == "http.response.start"
+            await send_with_id(message)
+
         try:
-            await self.app(scope, receive, send_with_id)
+            await self.app(scope, receive, send_tracking)
+        except Exception:
+            # Handle here, inside the logging scope, so the 500 still carries the correlation ID.
+            logger.exception("unhandled error", extra={"fields": {"request_id": request_id}})
+            fields["code"] = "internal_error"
+            if response_started:
+                raise
+            await send_tracking(
+                {
+                    "type": "http.response.start",
+                    "status": 500,
+                    "headers": [(b"content-type", b"application/json")],
+                }
+            )
+            await send_tracking({"type": "http.response.body", "body": INTERNAL_ERROR_BODY})
         finally:
             logger.info(
                 "request completed",

@@ -9,6 +9,7 @@ import pytest
 
 from tests.integration.support import (
     ABSENT_UUID,
+    API_URLS,
     BATCH_PATH,
     error_code,
     post_batch,
@@ -287,15 +288,20 @@ def test_body_size_limit(http, base, size, status):
 
 
 @pytest.mark.case("OPS002")
-def test_chunked_body_over_limit_is_413(http, unchanged):
+@pytest.mark.parametrize("target", ["nginx", *API_URLS])
+def test_chunked_body_over_limit_is_413(http, apis, unchanged, target):
+    """Without Content-Length the limit must hold while streaming, at Nginx and at each API."""
+    client = http if target == "nginx" else apis[target]
+
     def chunks():
         yield b'{"payer_firm_uuid": "' + unchanged["A"].uuid.encode() + b'", "pad": "'
         for _ in range(17):
             yield b"x" * 65536
         yield b'"}'
 
-    response = http.post(BATCH_PATH, content=chunks(), headers={"Content-Type": "application/json"})
+    response = client.post(BATCH_PATH, content=chunks(), headers={"Content-Type": "application/json"})
     assert response.status_code == 413
+    assert error_code(response) == "request_too_large"
 
 
 def test_unknown_route_and_method(http):

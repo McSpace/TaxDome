@@ -55,13 +55,15 @@ def map_db_error(exc: Exception, during_commit: bool) -> ApiError:
     sqlstate = exc.sqlstate
     if sqlstate in BUSINESS_ERRORS:
         return ApiError(*BUSINESS_ERRORS[sqlstate], details=_details(exc))
-    if isinstance(exc, (psycopg.OperationalError, psycopg.InterfaceError)) and during_commit:
+    connection_failure = isinstance(exc, (psycopg.OperationalError, psycopg.InterfaceError))
+    if during_commit and connection_failure and sqlstate is None:
+        # No answer from the server to COMMIT: the transaction may or may not have committed.
         return ApiError(
             503,
             "commit_outcome_unknown",
             "The database connection failed during commit; the payments may or may not be applied.",
         )
-    if sqlstate in TRANSIENT_SQLSTATES or isinstance(exc, psycopg.OperationalError):
+    if sqlstate in TRANSIENT_SQLSTATES or connection_failure:
         return ApiError(*UNAVAILABLE)
     return ApiError(500, "internal_error", "Unexpected internal error.")
 

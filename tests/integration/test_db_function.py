@@ -162,6 +162,12 @@ def test_overflow(admin):
         (None, [{"payee_firm_uuid": "B", "amount_cents": 1, "description": "x" * 1025}]),
         (None, [{"payee_firm_uuid": "UPPER", "amount_cents": 1, "description": "x"}]),
         (None, {"not": "an array"}),
+        (None, [1]),
+        (None, ["a string entry"]),
+        (None, [None, {"payee_firm_uuid": "B", "amount_cents": 1, "description": "x"}]),
+        (None, '[{"payee_firm_uuid": "B", "amount_cents": 1e400, "description": "x"}]'),
+        (None, [{"payee_firm_uuid": 1, "amount_cents": 1, "description": "x"}]),
+        (None, [{"payee_firm_uuid": "B", "amount_cents": 1, "description": 5}]),
         ("AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA", [{"payee_firm_uuid": "B", "amount_cents": 1, "description": "x"}]),
     ],
 )
@@ -169,12 +175,19 @@ def test_internal_validation(base, payer_override, entries):
     def resolve(value):
         return {"B": base["B"].uuid, "UPPER": base["B"].uuid.upper()}.get(value, value)
 
-    if isinstance(entries, list):
-        entries = [{**e, "payee_firm_uuid": resolve(e["payee_firm_uuid"])} for e in entries]
+    if isinstance(entries, str):  # raw JSON, for numbers Python cannot serialize (1e400)
+        payload = entries.replace('"B"', json.dumps(base["B"].uuid))
+    else:
+        if isinstance(entries, list):
+            entries = [
+                {**e, "payee_firm_uuid": resolve(e["payee_firm_uuid"])} if isinstance(e, dict) else e
+                for e in entries
+            ]
+        payload = json.dumps(entries)
     with psycopg.connect(API_DB_URL) as conn, pytest.raises(psycopg.Error) as info:
         conn.execute(
             "SELECT app.process_payment_batch(%s, %s::jsonb)",
-            (payer_override or base["A"].uuid, json.dumps(entries)),
+            (payer_override or base["A"].uuid, payload),
         )
     assert info.value.sqlstate == "TD005"
 

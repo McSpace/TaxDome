@@ -53,12 +53,9 @@ def _amount_to_cents(text: str) -> int:
 
 
 def _check_description(text: str) -> str:
+    # Lone surrogates never get here: strict str validation rejects them first.
     if "\u0000" in text:
         raise ValueError("description must not contain U+0000")
-    try:
-        text.encode("utf-8")
-    except UnicodeEncodeError:
-        raise ValueError("description must be valid Unicode text") from None
     return text
 
 

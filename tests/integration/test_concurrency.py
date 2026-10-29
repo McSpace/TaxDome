@@ -4,13 +4,17 @@ Overlap is forced with test gates (advisory locks inside the test-only hook) and
 in pg_stat_activity; sleeps are never used as evidence of ordering.
 """
 
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
+import httpx
 import psycopg
 import pytest
 
 from tests.integration.support import (
     ADMIN_URL,
+    API_URLS,
     BASE_FIXTURE,
     Gate,
     assert_ledger,
@@ -20,7 +24,6 @@ from tests.integration.support import (
     install_hook,
     post_batch,
     reset_db,
-    run_parallel,
     snapshot,
     wait_until,
     waiting_sessions,
@@ -111,13 +114,25 @@ def test_many_competing_debits(admin, clients):
 
 
 @pytest.mark.case("CON004")
-def test_many_one_cent_requests(admin, clients):
+def test_many_one_cent_requests(admin):
+    """200 requests released at the same instant (more than 3 pools x 10 connections)."""
     firms, f = fixture(admin, A=100)
+    count = 200
+    barrier = threading.Barrier(count)
+    limits = httpx.Limits(max_connections=count, max_keepalive_connections=count)
+    clients = [httpx.Client(base_url=url, timeout=60, limits=limits) for url in API_URLS.values()]
+
+    def send(i):
+        barrier.wait(timeout=30)
+        return post_batch(clients[i % 3], f["A"], [(f["B"], "0.01", f"cent {i}")])
+
     started = time.monotonic()
-    responses = run_parallel([
-        (lambda i=i: post_batch(clients[i % 3], f["A"], [(f["B"], "0.01", f"cent {i}")]))
-        for i in range(200)
-    ])
+    try:
+        with ThreadPoolExecutor(max_workers=count) as pool:
+            responses = list(pool.map(send, range(count)))
+    finally:
+        for client in clients:
+            client.close()
     assert time.monotonic() - started < 60
     assert statuses(responses) == [201] * 100 + [422] * 100
     after = snapshot()
