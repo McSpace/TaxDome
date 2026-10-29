@@ -1,0 +1,38 @@
+name: taxdome
+
+x-app-image: &app-image
+  image: taxdome-app:local
+  build:
+    context: .
+    target: runtime
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: taxdome
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-dev-password}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d taxdome"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  db-init:
+    <<: *app-image
+    command: ["python", "-m", "app.migrate"]
+    environment:
+      ADMIN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres-dev-password}@postgres:5432/taxdome
+      API_DB_PASSWORD: ${API_DB_PASSWORD:-api-dev-password}
+      # Only an unset variable defaults to "on"; an empty or malformed value fails initialization.
+      PAYMENT_IDEMPOTENCY_MODE: ${PAYMENT_IDEMPOTENCY_MODE-on}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  pgdata:

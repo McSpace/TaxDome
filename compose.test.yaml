@@ -1,0 +1,20 @@
+# Overrides for disposable test projects (scripts/test.sh). Never used for the normal stack.
+services:
+  test-runner:
+    profiles: ["test"]
+    build:
+      context: .
+      target: test
+    image: taxdome-test-runner:local
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      ADMIN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres-dev-password}@postgres:5432/taxdome
+      API_DATABASE_URL: postgresql://payments_api:${API_DB_PASSWORD:-api-dev-password}@postgres:5432/taxdome
+      API_DB_PASSWORD: ${API_DB_PASSWORD:-api-dev-password}
+      EXPECTED_IDEMPOTENCY_MODE: ${EXPECTED_IDEMPOTENCY_MODE:-on}
+      HOME: /tmp
+    volumes:
+      - ./evidence/test-results:/srv/results
+    depends_on:
+      db-init:
+        condition: service_completed_successfully

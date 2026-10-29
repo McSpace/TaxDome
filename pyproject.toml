@@ -24,6 +24,7 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+junit_family = "xunit1"
 markers = [
     "case(*ids): catalogue case IDs covered by the test",
     "slow: test takes several seconds",
