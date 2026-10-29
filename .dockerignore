@@ -1,0 +1,10 @@
+.git
+.venv
+.superpowers
+**/__pycache__
+.pytest_cache
+evidence
+docs/sources
+docs/superpowers
+*.png
+*.excalidraw
