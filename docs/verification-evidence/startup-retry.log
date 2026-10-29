@@ -1,0 +1,167 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.31kB done
+#1 DONE 0.0s
+
+#2 [api-3 internal] load build definition from Dockerfile
+#2 transferring dockerfile: 990B done
+#2 DONE 0.0s
+
+#3 [api-1] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#3 DONE 0.2s
+
+#4 [api-3] docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#4 resolve docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e done
+#4 CACHED
+
+#5 [api-2 internal] load metadata for docker.io/library/python:3.14.10-slim
+#5 DONE 0.2s
+
+#6 [api-3 internal] load metadata for ghcr.io/astral-sh/uv:0.11.3
+#6 DONE 0.2s
+
+#7 [db-init] FROM ghcr.io/astral-sh/uv:0.11.3@sha256:90bbb3c16635e9627f49eec6539f956d70746c409209041800a0280b93152823
+#7 resolve ghcr.io/astral-sh/uv:0.11.3@sha256:90bbb3c16635e9627f49eec6539f956d70746c409209041800a0280b93152823 done
+#7 DONE 0.0s
+
+#8 [api-3 base 1/4] FROM docker.io/library/python:3.14.10-slim@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999
+#8 resolve docker.io/library/python:3.14.10-slim@sha256:3cabfd7d7aaf394e6040e79fa1eec6ca1c52b74ed9188650472695d9a9326999 0.0s done
+#8 DONE 0.0s
+
+#9 [db-init internal] load build context
+#9 transferring context: 531B done
+#9 DONE 0.0s
+
+#10 [api-2 base 4/4] COPY pyproject.toml uv.lock ./
+#10 CACHED
+
+#11 [api-2 base 3/4] WORKDIR /srv
+#11 CACHED
+
+#12 [api-2 base 2/4] COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /usr/local/bin/uv
+#12 CACHED
+
+#13 [api-2 runtime 1/4] RUN uv sync --frozen --no-dev --no-install-project
+#13 CACHED
+
+#14 [api-2 runtime 3/4] COPY db ./db
+#14 CACHED
+
+#15 [api-2 runtime 2/4] COPY app ./app
+#15 CACHED
+
+#16 [api-2 runtime 4/4] RUN useradd --system --uid 10001 appuser
+#16 CACHED
+
+#17 [api-2 internal] load .dockerignore
+#17 transferring context: 151B done
+#17 ...
+
+#18 [api-2] exporting to image
+#18 exporting layers done
+#18 exporting manifest sha256:57d34caf15ae275cf15643f14ce42fb9f0af358865624f077ca4943aac1b9a7f done
+#18 exporting config sha256:698b51178085c828cd1b6a57e1f49548304bfca6b1cd289ef2a0fd458bfa9eaa done
+#18 exporting attestation manifest sha256:bfa6f603ec202379bcf15572da5afdefc9071482b9f5fdd3731b56c23f4b4a13 0.0s done
+#18 exporting manifest list sha256:44cefb8cd9bf3964cf11b01bbd528f77a57bf60eb4118d171c8cd8fea1c52c03 0.0s done
+#18 naming to docker.io/library/taxdome-app:local 0.0s done
+#18 unpacking to docker.io/library/taxdome-app:local 0.0s done
+#18 DONE 0.1s
+
+#19 [db-init] exporting to image
+#19 exporting layers done
+#19 exporting manifest sha256:a9cf70ddd709328672d0cfabc17eda2b9da9649b734b835f9d8786eb670e83c2 done
+#19 exporting config sha256:ac1c17b17b5c918052c2cbeee12aac28064de5500638a0373882d240e16cfcdf done
+#19 exporting attestation manifest sha256:3082c55cdf628d20e42cffb9979d0b77f681963d6ce3b97d4df2bfcb1a8090e5 0.0s done
+#19 exporting manifest list sha256:ce280f27fbdf6faa7a213e471d04eeffc8d3707d4913ec88e43c021a0e5bbbd3 0.0s done
+#19 naming to docker.io/library/taxdome-app:local 0.0s done
+#19 unpacking to docker.io/library/taxdome-app:local 0.0s done
+#19 DONE 0.1s
+
+#20 [api-1] exporting to image
+#20 exporting layers done
+#20 exporting manifest sha256:cbd33b74307f6fe810aaff893448297c19fc843498baaaa9ffab2ada538542e8 done
+#20 exporting config sha256:ac1609a550607b9664835a32c430eb144f30651b57a9da94ec81353eaed99883 done
+#20 exporting attestation manifest sha256:da20bd1ddfef121f46710eb9f83bbe0a5b4de1b0e5d65e800f76f7522d120f74 0.0s done
+#20 exporting manifest list sha256:68f793df65556c7bcaa70134dc9cb2cbb4e2f8064fdd19c176bddf72ebc0fa76 0.0s done
+#20 naming to docker.io/library/taxdome-app:local done
+#20 unpacking to docker.io/library/taxdome-app:local 0.0s done
+#20 DONE 0.1s
+
+#21 [api-3] exporting to image
+#21 exporting layers done
+#21 exporting manifest sha256:1919e43ce896732aafbe9bc8f10c03f9011a5d74eb127c6f8da953857f708530 done
+#21 exporting config sha256:d1fc2f015c126afd13663904825ec8e32621e85e2a14f78a39f1890285156e58 done
+#21 exporting attestation manifest sha256:436898892b41559fccfa10f58fd276547b125ef68f358811cb2f1fcea093ac59 0.0s done
+#21 exporting manifest list sha256:f3696a9c71500ee23080e451758bf2ddd33ae2262f6dfda5623a62374ea90c46 0.0s done
+#21 naming to docker.io/library/taxdome-app:local done
+#21 unpacking to docker.io/library/taxdome-app:local 0.0s done
+#21 DONE 0.2s
+
+#17 [api-2 internal] load .dockerignore
+#17 ...
+
+#22 [api-1] resolving provenance for metadata file
+#22 DONE 0.0s
+
+#23 [api-2] resolving provenance for metadata file
+#23 DONE 0.1s
+
+#24 [db-init] resolving provenance for metadata file
+#24 DONE 0.1s
+
+#25 [api-3] resolving provenance for metadata file
+#25 DONE 0.0s
+ taxdome-app:local  Built
+ taxdome-app:local  Built
+ taxdome-app:local  Built
+ taxdome-app:local  Built
+ Container taxdome-postgres-1  Running
+ Container taxdome-db-init-1  Recreate
+ Container taxdome-db-init-1  Recreated
+ Container taxdome-api-2-1  Recreate
+ Container taxdome-api-1-1  Recreate
+ Container taxdome-api-3-1  Recreate
+ Container taxdome-api-2-1  Recreated
+ Container taxdome-api-3-1  Recreated
+ Container taxdome-api-1-1  Recreated
+ Container taxdome-nginx-1  Running
+ Container taxdome-postgres-1  Waiting
+ Container taxdome-postgres-1  Healthy
+ Container taxdome-db-init-1  Starting
+ Container taxdome-db-init-1  Started
+ Container taxdome-db-init-1  Waiting
+ Container taxdome-db-init-1  Waiting
+ Container taxdome-db-init-1  Waiting
+ Container taxdome-db-init-1  Exited
+ Container taxdome-db-init-1  Exited
+ Container taxdome-api-2-1  Starting
+ Container taxdome-db-init-1  Exited
+ Container taxdome-api-1-1  Starting
+ Container taxdome-api-3-1  Starting
+ Container taxdome-api-2-1  Started
+ Container taxdome-api-3-1  Started
+ Container taxdome-api-1-1  Started
+ Container taxdome-api-3-1  Waiting
+ Container taxdome-api-1-1  Waiting
+ Container taxdome-api-2-1  Waiting
+ Container taxdome-api-2-1  Healthy
+ Container taxdome-api-1-1  Healthy
+ Container taxdome-api-3-1  Healthy
+ Container taxdome-nginx-1  Waiting
+ Container taxdome-postgres-1  Waiting
+ Container taxdome-db-init-1  Waiting
+ Container taxdome-api-1-1  Waiting
+ Container taxdome-api-2-1  Waiting
+ Container taxdome-api-3-1  Waiting
+ Container taxdome-api-2-1  Healthy
+ Container taxdome-nginx-1  Healthy
+ Container taxdome-postgres-1  Healthy
+ Container taxdome-api-3-1  Healthy
+ Container taxdome-db-init-1  Exited
+ Container taxdome-api-1-1  Healthy
+NAME                 IMAGE                 COMMAND                  SERVICE    CREATED         STATUS                        PORTS
+taxdome-api-1-1      taxdome-app:local     "uvicorn app.main:ap…"   api-1      9 seconds ago   Up 6 seconds (healthy)        8000/tcp
+taxdome-api-2-1      taxdome-app:local     "uvicorn app.main:ap…"   api-2      9 seconds ago   Up 6 seconds (healthy)        8000/tcp
+taxdome-api-3-1      taxdome-app:local     "uvicorn app.main:ap…"   api-3      9 seconds ago   Up 6 seconds (healthy)        8000/tcp
+taxdome-nginx-1      nginx:1.29.8-alpine   "/docker-entrypoint.…"   nginx      2 minutes ago   Up About a minute (healthy)   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+taxdome-postgres-1   postgres:18.6         "docker-entrypoint.s…"   postgres   2 minutes ago   Up 2 minutes (healthy)        5432/tcp
+Service ready at http://localhost:8080

@@ -1,0 +1,606 @@
+[
+  {
+    "name": "official sample database verified",
+    "state": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    }
+  },
+  {
+    "name": "insufficient total, neither entry applied",
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "insufficient_funds",
+        "message": "Payer balance cannot cover new outgoing payments."
+      }
+    },
+    "before": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    },
+    "after": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    }
+  },
+  {
+    "name": "unknown later recipient, first entry not applied",
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "unknown_firm",
+        "message": "A payer or payee firm does not exist.",
+        "details": [
+          {
+            "path": "payments[1].payee_firm_uuid",
+            "index": 1
+          }
+        ]
+      }
+    },
+    "before": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    },
+    "after": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    }
+  },
+  {
+    "name": "three decimal places rejected",
+    "status": 422,
+    "response": {
+      "error": {
+        "code": "validation_error",
+        "message": "Request validation failed.",
+        "details": [
+          {
+            "index": 0,
+            "path": "payments[0].amount",
+            "message": "amount must be a positive decimal string with at most 2 fractional digits"
+          }
+        ]
+      }
+    },
+    "before": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    },
+    "after": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    }
+  },
+  {
+    "name": "declared ON deviation: gross request 40000 USD exceeds balance, but one of two identical payments skipped",
+    "status": 201,
+    "response": {
+      "inserted_count": 1,
+      "skipped_count": 1,
+      "gross_outgoing_cents": 2000000,
+      "idempotency_mode": "on"
+    },
+    "before": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 3674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        }
+      ]
+    },
+    "after": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 1674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 2170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 2000000,
+          "description": "independent-identical"
+        }
+      ]
+    }
+  },
+  {
+    "name": "declared ON deviation: same description and payee with new amount conflicts",
+    "status": 409,
+    "response": {
+      "error": {
+        "code": "payment_amount_conflict",
+        "message": "A payment key already has a different amount.",
+        "details": [
+          {
+            "path": "payments[0].amount",
+            "index": 0
+          }
+        ]
+      }
+    },
+    "before": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 1674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 2170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 2000000,
+          "description": "independent-identical"
+        }
+      ]
+    },
+    "after": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 1674875
+        },
+        {
+          "id": 2,
+          "balance_cents": 2170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 2000000,
+          "description": "independent-identical"
+        }
+      ]
+    }
+  },
+  {
+    "name": "independent 3-request overlapping overspend race through Nginx",
+    "statuses": [
+      422,
+      422,
+      201
+    ],
+    "before": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 10000
+        },
+        {
+          "id": 2,
+          "balance_cents": 2170075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 2000000,
+          "description": "independent-identical"
+        }
+      ]
+    },
+    "after": {
+      "balances": [
+        {
+          "id": 1,
+          "balance_cents": 2000
+        },
+        {
+          "id": 2,
+          "balance_cents": 2178075
+        },
+        {
+          "id": 3,
+          "balance_cents": 1405050
+        }
+      ],
+      "payments": [
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 625000,
+          "description": "Overflow returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 3,
+          "amount_cents": 580050,
+          "description": "Amended returns, August 2026"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 120075,
+          "description": "Bookkeeping cleanup, 3 clients"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 2000000,
+          "description": "independent-identical"
+        },
+        {
+          "payer_firm_id": 1,
+          "payee_firm_id": 2,
+          "amount_cents": 8000,
+          "description": "independent-race-2"
+        }
+      ]
+    }
+  },
+  {
+    "name": "three instances reached through Nginx",
+    "instances": [
+      "api-2",
+      "api-3",
+      "api-1",
+      "api-2",
+      "api-3",
+      "api-1",
+      "api-2",
+      "api-3",
+      "api-1",
+      "api-2",
+      "api-3",
+      "api-1",
+      "api-2",
+      "api-3",
+      "api-1"
+    ]
+  }
+]
