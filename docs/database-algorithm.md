@@ -1,0 +1,13 @@
+# PostgreSQL payment algorithm
+
+Consolidated implementation note, 29 October 2026. This restates the decisions in [PRD.md](PRD.md), sections 5-8; it is not a recovered verbatim assistant answer. The older PostgreSQL discussion is preserved in [sources/conversations/postgres-locking.json](sources/conversations/postgres-locking.json), but its assistant answers are returned as reference placeholders by the history reader.
+
+1. Begin one `READ COMMITTED` transaction per batch. Call the `VOLATILE`, `PARALLEL UNSAFE` stored function with one payer and validated entries; the function also validates its internal input and authoritative static mode.
+2. Resolve every public firm UUID. Reject unknown firms. Lock the distinct payer/payee firm rows in ascending internal ID order with `FOR UPDATE`; hold every lock through transaction completion. Include self once. No runtime firm administration or alternative balance writer is supported.
+3. After obtaining all locks, use a separate SQL statement to read payment history. This post-wait read must see the preceding transaction's committed payments. The payer row serializes batches for that payer, protecting absent payment keys as well as existing ones.
+4. In ON mode classify `(payer, payee, exact description)` keys against history and within the batch. Equal cent amounts are skipped, unequal amounts reject the entire batch. In OFF mode retain all entries. Validate all input and firm references even for potential repeats.
+5. Sum cents for retained entries with wide arithmetic. Require the locked starting payer balance to cover this gross amount, including self-payments. An all-skipped ON batch requires zero funds. Never fund outgoing entries using credits from this same batch.
+6. Calculate net deltas per firm from the retained set and validate final `INTEGER` balance bounds. Insert the accepted payment rows individually and apply aggregated deltas atomically. Self-payments have a recorded row and zero net delta. Opening balances are preserved; do not reconstruct balances from an incomplete payment history.
+7. Return counts, gross outgoing and mode. The API commits, then returns 201. Any known failure before commit rolls back all business changes; sequence gaps are acceptable. Do not retry automatically or claim rollback when commit outcome is unknown.
+
+The runtime role may execute the controlled owner-function but may not write base tables or change the function/mode. Keep function object references and search path trusted. The exact HTTP contract, error precedence, static mode configuration and acceptance criteria are in the PRD.
